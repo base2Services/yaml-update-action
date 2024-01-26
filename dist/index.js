@@ -48,15 +48,21 @@ function run(options, actions) {
             if (options.commitChange === false || files.length === 0) {
                 return;
             }
+            actions.debug(`------here--------`);
             const octokit = new rest_1.Octokit({ auth: options.token, baseUrl: options.githubAPI });
-            yield gitProcessing(options.repository, options.branch, options.masterBranchName, files, options.message, octokit, actions, options.committer);
+            actions.debug(`------also here--------`);
+            yield gitProcessing(options.repository, options.branch, options.force, options.masterBranchName, files, options.message, octokit, actions, options.committer);
             if (options.createPR) {
                 yield createPullRequest(options.repository, options.branch, options.targetBranch, options.labels, options.title || `Merge: ${options.message}`, options.description, options.reviewers, options.teamReviewers, options.assignees, octokit, actions);
             }
         }
         catch (error) {
-            actions.setFailed(error.toString());
-            return;
+            const msg = error.toString();
+            if (msg.includes('pull request already exists')) {
+                actions.info("Pull Request already exists");
+                return;
+            }
+            actions.setFailed(`failed to create PR: ${msg}`);
         }
     });
 }
@@ -103,7 +109,7 @@ function writeTo(content, filePath, actions) {
     });
 }
 exports.writeTo = writeTo;
-function gitProcessing(repository, branch, masterBranchName, files, commitMessage, octokit, actions, committer) {
+function gitProcessing(repository, branch, force, masterBranchName, files, commitMessage, octokit, actions, committer) {
     return __awaiter(this, void 0, void 0, function* () {
         const { owner, repo } = (0, git_commands_1.repositoryInformation)(repository);
         const { commitSha, treeSha } = yield (0, git_commands_1.currentCommit)(octokit, owner, repo, branch, masterBranchName);
@@ -119,7 +125,7 @@ function gitProcessing(repository, branch, masterBranchName, files, commitMessag
         const newCommitSha = yield (0, git_commands_1.createNewCommit)(octokit, owner, repo, commitMessage, newTreeSha, commitSha, committer);
         actions.debug(JSON.stringify({ createdCommit: newCommitSha }));
         actions.setOutput('commit', newCommitSha);
-        yield (0, git_commands_1.updateBranch)(octokit, owner, repo, branch, newCommitSha, actions);
+        yield (0, git_commands_1.updateBranch)(octokit, owner, repo, branch, force, newCommitSha, actions);
         actions.debug(`Complete`);
     });
 }
@@ -329,13 +335,14 @@ const createNewCommit = (octo, owner, repo, message, treeSha, commitSha, author)
     return data.sha;
 });
 exports.createNewCommit = createNewCommit;
-const updateBranch = (octo, owner, repo, branch, commitSha, actions) => __awaiter(void 0, void 0, void 0, function* () {
+const updateBranch = (octo, owner, repo, branch, force, commitSha, actions) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield octo.git.updateRef({
             owner,
             repo,
             ref: `heads/${branch}`,
-            sha: commitSha
+            sha: commitSha,
+            force: force
         });
     }
     catch (error) {
@@ -563,6 +570,9 @@ class GitHubOptions {
     get branch() {
         return core.getInput('branch');
     }
+    get force() {
+        return core.getBooleanInput('force');
+    }
     get commitChange() {
         return core.getBooleanInput('commitChange');
     }
@@ -699,6 +709,9 @@ class EnvOptions {
     }
     get masterBranchName() {
         return process.env.MASTER_BRANCH_NAME || '';
+    }
+    get force() {
+        return process.env.FORCE === 'true';
     }
     get commitChange() {
         return process.env.COMMIT_CHANGE === 'true';

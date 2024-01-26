@@ -33,10 +33,20 @@ export async function run(options: Options, actions: Actions): Promise<void> {
     if (options.commitChange === false || files.length === 0) {
       return
     }
-
+    actions.debug(`------here--------`)
     const octokit = new Octokit({auth: options.token, baseUrl: options.githubAPI})
-
-    await gitProcessing(options.repository, options.branch, options.force, options.masterBranchName, files, options.message, octokit, actions, options.committer)
+    actions.debug(`------also here--------`)
+    await gitProcessing(
+      options.repository,
+      options.branch,
+      options.force,
+      options.masterBranchName,
+      files,
+      options.message,
+      octokit,
+      actions,
+      options.committer
+    )
 
     if (options.createPR) {
       await createPullRequest(
@@ -55,9 +65,9 @@ export async function run(options: Options, actions: Actions): Promise<void> {
     }
   } catch (error) {
     const msg = (error as Error).toString()
-    
+
     if (msg.includes('pull request already exists')) {
-      actions.info("Pull Request already exists")
+      actions.info('Pull Request already exists')
       return
     }
 
