@@ -141,6 +141,7 @@ export async function gitProcessing(
   committer: Committer
 ): Promise<void> {
   const {owner, repo} = repositoryInformation(repository)
+  actions.debug(`------owner=${owner}  repo=${repo}--------`)
   const {commitSha, treeSha} = await currentCommit(octokit, owner, repo, branch, masterBranchName)
 
   actions.debug(JSON.stringify({baseCommit: commitSha, baseTree: treeSha}))

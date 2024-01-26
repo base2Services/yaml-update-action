@@ -59,7 +59,7 @@ function run(options, actions) {
         catch (error) {
             const msg = error.toString();
             if (msg.includes('pull request already exists')) {
-                actions.info("Pull Request already exists");
+                actions.info('Pull Request already exists');
                 return;
             }
             actions.setFailed(`failed to create PR: ${msg}`);
@@ -112,6 +112,7 @@ exports.writeTo = writeTo;
 function gitProcessing(repository, branch, force, masterBranchName, files, commitMessage, octokit, actions, committer) {
     return __awaiter(this, void 0, void 0, function* () {
         const { owner, repo } = (0, git_commands_1.repositoryInformation)(repository);
+        actions.debug(`------owner=${owner}  repo=${repo}--------`);
         const { commitSha, treeSha } = yield (0, git_commands_1.currentCommit)(octokit, owner, repo, branch, masterBranchName);
         actions.debug(JSON.stringify({ baseCommit: commitSha, baseTree: treeSha }));
         const debugFiles = {};
