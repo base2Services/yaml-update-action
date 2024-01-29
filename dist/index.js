@@ -57,7 +57,9 @@ function run(options, actions) {
             }
         }
         catch (error) {
+            const stack = error.stack;
             const msg = error.toString();
+            actions.debug(`error:${stack}`);
             if (msg.includes('pull request already exists')) {
                 actions.info('Pull Request already exists');
                 return;
@@ -112,8 +114,9 @@ exports.writeTo = writeTo;
 function gitProcessing(repository, branch, force, masterBranchName, files, commitMessage, octokit, actions, committer) {
     return __awaiter(this, void 0, void 0, function* () {
         const { owner, repo } = (0, git_commands_1.repositoryInformation)(repository);
-        actions.debug(`------owner=${owner}  repo=${repo}--------`);
-        const { commitSha, treeSha } = yield (0, git_commands_1.currentCommit)(octokit, owner, repo, branch, masterBranchName);
+        actions.debug(`------owner=${owner}  repo=${repo}--------branch=${branch} mb=${masterBranchName}`);
+        const { commitSha, treeSha } = yield (0, git_commands_1.currentCommit)(octokit, owner, repo, branch, masterBranchName, actions);
+        actions.debug(`hereherherherhehrerh`);
         actions.debug(JSON.stringify({ baseCommit: commitSha, baseTree: treeSha }));
         const debugFiles = {};
         for (const file of files) {
@@ -260,18 +263,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.repositoryInformation = exports.updateBranch = exports.createNewCommit = exports.createNewTree = exports.createBlobForFile = exports.currentCommit = void 0;
-const currentCommit = (octo, org, repo, branch, masterBranchName) => __awaiter(void 0, void 0, void 0, function* () {
+const currentCommit = (octo, org, repo, branch, masterBranchName, actions) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f;
     let commitSha = '';
     try {
+        actions.debug(`currentCommit1`);
         const { data: refData } = yield octo.git.getRef({
             owner: org,
             repo,
             ref: `heads/${branch}`
         });
+        actions.debug(`currentCommit2`);
         if (!((_a = refData.object) === null || _a === void 0 ? void 0 : _a.sha)) {
             throw Error(`Failed to get current ref from heads/${branch}`);
         }
+        actions.debug(`currentCommit3`);
         commitSha = (_b = refData.object) === null || _b === void 0 ? void 0 : _b.sha;
     }
     catch (error) {
@@ -280,19 +286,23 @@ const currentCommit = (octo, org, repo, branch, masterBranchName) => __awaiter(v
             repo,
             ref: `heads/${masterBranchName}`
         });
+        actions.debug(`currentCommit4`);
         if (!((_c = refData.object) === null || _c === void 0 ? void 0 : _c.sha)) {
             throw Error(`Failed to get current ref from heads/master`);
         }
         commitSha = (_d = refData.object) === null || _d === void 0 ? void 0 : _d.sha;
     }
+    actions.debug(`currentCommit5`);
     const { data: commitData } = yield octo.git.getCommit({
         owner: org,
         repo,
         commit_sha: commitSha
     });
+    actions.debug(`currentCommit6`);
     if (!((_e = commitData.tree) === null || _e === void 0 ? void 0 : _e.sha)) {
         throw Error('Failed to get the commit');
     }
+    actions.debug(`currentCommit7`);
     return {
         commitSha,
         treeSha: (_f = commitData.tree) === null || _f === void 0 ? void 0 : _f.sha

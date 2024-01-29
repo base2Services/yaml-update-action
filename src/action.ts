@@ -64,9 +64,10 @@ export async function run(options: Options, actions: Actions): Promise<void> {
       )
     }
   } catch (error) {
+    const stack = (error as Error).stack
     const msg = (error as Error).toString()
 
-    actions.debug(`error:${error.stack}`)
+    actions.debug(`error:${stack}`)
 
     if (msg.includes('pull request already exists')) {
       actions.info('Pull Request already exists')
