@@ -20,22 +20,23 @@ export const currentCommit = async (
   org: string,
   repo: string,
   branch: string,
-  masterBranchName: string
+  masterBranchName: string,
+  actions: Actions
 ): Promise<{commitSha: string; treeSha: string}> => {
   let commitSha = ''
   try {
-    console.log(`currentCommit1`)
+    actions.debug(`currentCommit1`)
     const {data: refData} = await octo.git.getRef({
       owner: org,
       repo,
       ref: `heads/${branch}`
     })
 
-    console.log(`currentCommit2`)
+    actions.debug(`currentCommit2`)
     if (!refData.object?.sha) {
       throw Error(`Failed to get current ref from heads/${branch}`)
     }
-    console.log(`currentCommit3`)
+    actions.debug(`currentCommit3`)
     commitSha = refData.object?.sha
   } catch (error) {
     const {data: refData} = await octo.git.getRef({
@@ -43,24 +44,24 @@ export const currentCommit = async (
       repo,
       ref: `heads/${masterBranchName}`
     })
-    console.log(`currentCommit4`)
+    actions.debug(`currentCommit4`)
     if (!refData.object?.sha) {
       throw Error(`Failed to get current ref from heads/master`)
     }
 
     commitSha = refData.object?.sha
   }
-  console.log(`currentCommit5`)
+  actions.debug(`currentCommit5`)
   const {data: commitData} = await octo.git.getCommit({
     owner: org,
     repo,
     commit_sha: commitSha
   })
-  console.log(`currentCommit6`)
+  actions.debug(`currentCommit6`)
   if (!commitData.tree?.sha) {
     throw Error('Failed to get the commit')
   }
-  console.log(`currentCommit7`)
+  actions.debug(`currentCommit7`)
   return {
     commitSha,
     treeSha: commitData.tree?.sha
